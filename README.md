@@ -1,8 +1,8 @@
 # 🎬 CaptureX
 
-**Enterprise-grade browser-based screen recorder for secure and private screen capture.**
+**Enterprise-grade browser-based screen recorder for recording screens, windows, browser tabs, and audio directly in your browser.**
 
-CaptureX is a modern screen recording solution that supports screen, window, and browser tab capture with microphone recording, system audio capture, recording management, playback, downloads, and built-in branding protection. All processing happens locally in your browser, ensuring complete privacy and control over your recordings.
+CaptureX is a modern screen recording solution that supports screen, window, and browser tab capture with microphone recording, system audio capture, recording management, playback, and downloads. All processing happens locally in your browser, giving you complete control over your recordings without relying on external services or software installation
 
 ---
 
@@ -63,13 +63,6 @@ No login. No account. No data sent anywhere. Open CaptureX and start recording i
 - Select multiple recordings for deletion
 - Select or clear all recordings
 - Receive confirmation before deletion
-
-### ⚡ Built-In Branding Protection
-
-- Automatically embeds CaptureX branding into every recording
-- Adds GitHub and LinkedIn attribution directly to the recorded video
-- Applies the watermark during recording, not as a temporary player overlay
-- Keeps branding visible when the downloaded video is shared or uploaded elsewhere
 
 ### 🎨 Modern User Experience
 
