@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CaptureX — Browser Screen Recorder</title>
+<meta name="description" content="CaptureX is a private, browser-based screen recorder with burned-in watermark. No install, no upload — your recording never leaves your device." />
+<style>
+  :root{
+    --bg:#070b14;
+    --bg-2:#0a1120;
+    --side:#0c1424;
+    --panel:#111a2c;
+    --panel-2:#16203a;
+    --line:rgba(120,145,200,.15);
+    --line-2:rgba(120,145,200,.3);
+    --txt:#e9f0ff;
+    --muted:#8798bd;
+    --accent:#22d3ee;
+    --accent-2:#3b82f6;
+    --danger:#ff4d6a;
+    --ok:#22c55e;
+    --warn:#f5a524;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    color:var(--txt);background:var(--bg);
+    display:flex;flex-direction:column;min-height:100%;
+  }
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(120,145,200,.22);border-radius:9px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(120,145,200,.35)}
+
+  /* hidden source video — must stay rendered (not display:none) so it keeps decoding */
+  #srcHost{position:fixed;left:-10000px;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
+
+  /* ---------------- top strip ---------------- */
+  .topstrip{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 22px;font-size:13.5px;color:var(--muted);
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(90deg, rgba(34,211,238,.07), rgba(59,130,246,.05));
+  }
+  .topstrip b{color:var(--txt)}
+  .topstrip .sp{flex:1}
+  .topstrip .badge-live{
+    display:none;align-items:center;gap:8px;color:#ff9aab;font-size:12.5px;
+    border:1px solid rgba(255,77,106,.45);background:rgba(255,77,106,.12);
+    padding:5px 12px;border-radius:999px;font-variant-numeric:tabular-nums;
+  }
+  .topstrip .badge-live.show{display:flex}
+  .topstrip .badge-live i{width:8px;height:8px;border-radius:50%;background:var(--danger)}
+  .topstrip .badge-live.rec i{animation:blink 1.1s infinite}
+  @keyframes blink{50%{opacity:.1}}
+
+  /* ---------------- shell ---------------- */
+  .shell{display:flex;flex:1;min-height:0;align-items:stretch}
+  @media (max-width:900px){ .shell{flex-direction:column} }
+
+  /* ---------------- sidebar ---------------- */
+  .sidebar{
+    width:290px;flex:none;background:var(--side);
+    border-right:1px solid var(--line);
+    padding:18px;overflow-y:auto;
+    display:flex;flex-direction:column;gap:16px;
+  }
+  @media (max-width:900px){ .sidebar{width:auto;border-right:none;border-bottom:1px solid var(--line)} }
+
+  .brand{display:flex;align-items:center;gap:11px}
+  .logo{
+    width:38px;height:38px;border-radius:11px;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:grid;place-items:center;font-size:18px;color:#04121a;
+    box-shadow:0 0 22px rgba(34,211,238,.4);
+  }
+  .brand h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.3px}
+  .brand h1 span{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand small{display:block;color:var(--muted);font-size:11px}
+
+  .btn-main{
+    width:100%;font:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    padding:15px;border-radius:13px;border:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#04121a;
+    box-shadow:0 8px 26px rgba(34,211,238,.3);
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    transition:transform .1s ease,box-shadow .2s ease,filter .2s ease;
+  }
+  .btn-main:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 32px rgba(34,211,238,.42)}
+  .btn-main:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  .btn-main.recording{background:linear-gradient(135deg,#ff4d6a,#e11d48);color:#fff;box-shadow:0 8px 26px rgba(255,77,106,.32)}
+
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .btn{
+    font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+    padding:12px 10px;border-radius:11px;
+    border:1px solid var(--line-2);background:var(--panel);color:var(--txt);
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:background .18s ease,transform .1s ease,opacity .18s ease;
+  }
+  .btn:hover:not(:disabled){background:var(--panel-2);transform:translateY(-1px)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:focus-visible,.btn-main:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .kb{font-size:10.5px;opacity:.55;font-weight:500}
+
+  .sec-title{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:1.4px;
+    color:var(--muted);font-weight:700;margin:0 0 10px;
+  }
+
+  /* toggle rows */
+  .toggle-row{
+    display:flex;align-items:center;gap:12px;padding:12px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:9px;cursor:pointer;transition:border-color .18s ease,background .18s ease;
+  }
+  .toggle-row:hover{border-color:var(--line-2)}
+  .toggle-row.on{border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.07)}
+  .toggle-row .ic{font-size:19px;flex:none;width:24px;text-align:center}
+  .toggle-row .tx{flex:1;min-width:0}
+  .toggle-row .tx b{display:block;font-size:13.5px;font-weight:650}
+  .toggle-row .tx em{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px}
+  .sw{
+    width:42px;height:24px;border-radius:999px;flex:none;position:relative;
+    background:rgba(120,145,200,.25);transition:background .2s ease;
+  }
+  .sw::after{
+    content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+    background:#fff;transition:transform .2s ease;
+  }
+  .toggle-row.on .sw{background:var(--accent)}
+  .toggle-row.on .sw::after{transform:translateX(18px)}
+  .toggle-row input{position:absolute;opacity:0;pointer-events:none}
+
+  .hintline{
+    font-size:11px;color:var(--muted);line-height:1.55;margin:-2px 0 0;padding:0 2px;
+  }
+  .hintline b{color:var(--warn)}
+
+  /* quality segmented */
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .seg button{
+    font:inherit;font-size:13px;font-weight:650;cursor:pointer;padding:11px 6px;border-radius:10px;
+    border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    transition:all .18s ease;
+  }
+  .seg button:hover{color:var(--txt);border-color:var(--line-2)}
+  .seg button.active{background:var(--accent);border-color:var(--accent);color:#04121a}
+
+  /* watermark box — static, always applied */
+  .wm-box{
+    display:flex;align-items:flex-start;gap:11px;padding:12px;
+    background:linear-gradient(135deg, rgba(34,211,238,.09), rgba(59,130,246,.05));
+    border:1px solid rgba(34,211,238,.3);border-radius:12px;
+    font-size:11.5px;color:var(--muted);line-height:1.6;word-break:break-word;
+  }
+  .wm-box .ic{font-size:17px;flex:none;line-height:1.3}
+  .wm-box b{color:var(--txt);font-size:12px}
+  .wm-lock{
+    display:inline-flex;align-items:center;gap:4px;margin-left:7px;
+    font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;
+    color:var(--accent);background:rgba(34,211,238,.14);
+    border:1px solid rgba(34,211,238,.35);border-radius:999px;padding:1px 7px;
+    vertical-align:middle;
+  }
+
+  .field label{display:block;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:700}
+  .field input{
+    width:100%;padding:11px 12px;border-radius:11px;font:inherit;font-size:13.5px;
+    background:var(--panel);border:1px solid var(--line-2);color:var(--txt);
+  }
+  .field input:focus{outline:none;border-color:var(--accent)}
+
+  /* profile card */
+  .profile{
+    margin-top:auto;display:flex;align-items:center;gap:12px;padding:13px;
+    background:linear-gradient(135deg, rgba(34,211,238,.1), rgba(59,130,246,.06));
+    border:1px solid var(--line-2);border-radius:13px;
+  }
+  .avatar{
+    width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#04121a;font-weight:800;font-size:15px;letter-spacing:.5px;
+  }
+  .profile b{display:block;font-size:14px}
+  .profile .plinks{display:flex;gap:11px;margin-top:3px;font-size:12px}
+  .profile .plinks a{color:var(--muted);text-decoration:none}
+  .profile .plinks a:hover{color:var(--accent)}
+
+  /* ---------------- workspace ---------------- */
+  .work{flex:1;min-width:0;padding:18px 22px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;background:var(--bg-2)}
+
+  .notice{
+    display:none;align-items:flex-start;gap:11px;padding:12px 15px;border-radius:12px;
+    background:rgba(245,165,36,.1);border:1px solid rgba(245,165,36,.4);
+    font-size:12.5px;color:#ffd79a;line-height:1.6;
+  }
+  .notice.show{display:flex}
+  .notice b{color:#fff}
+  .notice .x{margin-left:auto;cursor:pointer;opacity:.7;flex:none;font-size:15px;background:none;border:none;color:inherit}
+  .notice .x:hover{opacity:1}
+
+  .window{
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);
+    display:flex;flex-direction:column;
+  }
+  .titlebar{
+    display:flex;align-items:center;gap:12px;padding:11px 15px;
+    background:rgba(255,255,255,.03);border-bottom:1px solid var(--line);
+  }
+  .dots{display:flex;gap:7px;flex:none}
+  .dots i{width:12px;height:12px;border-radius:50%;display:block}
+  .dots i:nth-child(1){background:#ff5f57}
+  .dots i:nth-child(2){background:#febc2e}
+  .dots i:nth-child(3){background:#28c840}
+  .titlebar h2{margin:0;font-size:13.5px;font-weight:650;letter-spacing:.2px}
+  .titlebar .sp{flex:1}
+  .tbtn{
+    font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;
+    padding:8px 14px;border-radius:9px;border:1px solid var(--line-2);
+    background:transparent;color:var(--txt);display:inline-flex;align-items:center;gap:7px;
+    transition:background .18s ease,opacity .18s ease;
+  }
+  .tbtn:hover:not(:disabled){background:rgba(255,255,255,.07)}
+  .tbtn:disabled{opacity:.4;cursor:not-allowed}
+  .tbtn.go{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.5);color:#8ae8b4}
+  .tbtn.go:hover:not(:disabled){background:rgba(34,197,94,.26)}
+
+  .stage{
+    position:relative;background:#04070d;
+    aspect-ratio:16/9;max-height:calc(100vh - 400px);min-height:230px;
+    display:flex;align-items:center;justify-content:center;
+    background-image:
+      linear-gradient(rgba(120,145,200,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,145,200,.04) 1px, transparent 1px);
+    background-size:26px 26px;
+  }
+  video{width:100%;height:100%;object-fit:contain;background:#04070d;display:none}
+  video.active{display:block}
+  .empty{text-align:center;padding:20px;max-width:430px}
+  .empty .ring{
+    width:64px;height:64px;margin:0 auto 13px;border-radius:18px;display:grid;place-items:center;font-size:26px;
+    background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.28);
+    animation:pulse 2.6s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 8px rgba(34,211,238,.04)}50%{box-shadow:0 0 0 16px rgba(34,211,238,.02)}}
+  .empty h3{margin:0 0 6px;font-size:16.5px;font-weight:650}
+  .empty p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+  kbd{font:inherit;font-size:11px;background:var(--panel-2);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;padding:2px 7px}
+
+  .statbar{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border-top:1px solid var(--line);
+  }
+  @media (max-width:600px){ .statbar{grid-template-columns:repeat(2,1fr)} }
+  .statbar div{background:var(--panel);padding:10px 15px}
+  .statbar span{display:block;font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .statbar b{font-size:14.5px;font-weight:650;font-variant-numeric:tabular-nums}
+  .statbar b.idle{color:var(--muted)}
+  .statbar b.live{color:var(--danger)}
+  .statbar b.paused{color:var(--warn)}
+  .statbar b.done{color:var(--ok)}
+  .statbar b.warn{color:var(--warn);font-size:13px}
+
+  /* recordings library */
+  .lib-head{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)}
+  .lib-head h2{margin:0;font-size:13.5px;font-weight:650}
+  .lib-head .count{font-size:11.5px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);padding:2px 9px;border-radius:999px}
+  .lib-head .sp{flex:1}
+  .tbtn.del{background:rgba(255,77,106,.14);border-color:rgba(255,77,106,.45);color:#ff9aab}
+  .tbtn.del:hover:not(:disabled){background:rgba(255,77,106,.24)}
+
+  .lib-body{max-height:290px;overflow-y:auto}
+  .lib-empty{padding:26px 18px;text-align:center;color:var(--muted);font-size:13px}
+  .rec{
+    display:flex;align-items:center;gap:13px;padding:12px 15px;
+    border-bottom:1px solid var(--line);transition:background .15s ease;
+  }
+  .rec:last-child{border-bottom:none}
+  .rec:hover{background:rgba(255,255,255,.03)}
+  .rec.sel{background:rgba(34,211,238,.07)}
+  .rec input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+  .rec .thumb{
+    width:62px;height:36px;border-radius:7px;flex:none;background:#04070d;
+    border:1px solid var(--line);display:grid;place-items:center;font-size:15px;overflow:hidden;
+  }
+  .rec .thumb img{width:100%;height:100%;object-fit:cover}
+  .rec .meta{flex:1;min-width:0}
+  .rec .meta b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rec .meta em{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px}
+  .rec .acts{display:flex;gap:6px;flex:none}
+  .ibtn{
+    width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:13px;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--txt);
+    display:grid;place-items:center;transition:background .15s ease,color .15s ease;
+  }
+  .ibtn:hover{background:rgba(255,255,255,.1)}
+  .ibtn.d:hover{background:rgba(255,77,106,.22);color:#ff9aab;border-color:rgba(255,77,106,.4)}
+
+  /* ---------------- footer ---------------- */
+  footer{
+    display:flex;align-items:center;flex-wrap:wrap;gap:8px 0;
+    padding:12px 22px;border-top:1px solid var(--line);
+    background:var(--side);font-size:13px;color:var(--muted);
+  }
+  footer .fname{font-weight:700;color:var(--txt);margin-right:4px}
+  footer .dev{color:var(--muted)}
+  footer .dev b{color:var(--txt);font-weight:650}
+  footer a{color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  footer a:hover{color:var(--accent)}
+  footer .dot{margin:0 12px;opacity:.35}
+  footer .sp{flex:1}
+  footer .copy{font-size:12px;opacity:.75}
+  @media (max-width:900px){ footer{justify-content:center;text-align:center} footer .sp{flex:none;width:100%} }
+</style>
+</head>
+<body>
+
+<div id="srcHost"></div>
+
+<div class="topstrip">
+  <span>ℹ️</span>
+  <span>Select options and click <b>Start Recording</b> — works with entire screen, windows, and tabs.</span>
+  <span class="sp"></span>
+  <span class="badge-live" id="liveBadge"><i></i><span id="liveLabel">REC</span> <span id="liveTime">00:00</span></span>
+</div>
+
+<div class="shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="logo">⬤</div>
+      <div>
+        <h1>Capture<span>X</span></h1>
+        <small>Private browser screen recorder</small>
+      </div>
+    </div>
+
+    <button class="btn-main" id="mainBtn">● Start Recording</button>
+
+    <div class="btn-row">
+      <button class="btn" id="pauseBtn" disabled>❚❚ Pause <span class="kb">P</span></button>
+      <button class="btn" id="stopBtn" disabled>■ Stop <span class="kb">Esc</span></button>
+    </div>
+
+    <div>
+      <p class="sec-title">Recording options</p>
+
+      <label class="toggle-row on" id="rowScreen">
+        <span class="ic">🖥️</span>
+        <span class="tx"><b>Screen</b><em>Entire screen, window or tab</em></span>
+        <span class="sw"></span>
+        <input type="checkbox" id="screenToggle" checked disabled />
+      </label>
+
+      <label class="toggle-row" id="rowMic">
+        <span class="ic">🎙️</span>
+        <span class="tx"><b>Microphone</b><em>Include your voice</em></span>
+        <span class="sw"></span>
+        <input type="checkbox" id="micToggle" />
+      </label>
+
+      <label class="toggle-row" id="rowSys" style="margin-bottom:8px">
+        <span class="ic">🔊</span>
+        <span class="tx"><b>System Audio</b><em>Capture app sounds</em></span>
+        <span class="sw"></span>
+        <input type="checkbox" id="sysToggle" />
+      </label>
+
+      <p class="hintline">
+        System audio only works if you also tick <b>“Share system audio”</b> (or
+        <b>“Share tab audio”</b>) inside the browser's share dialog. Windows only.
+      </p>
+    </div>
+
+    <div>
+      <p class="sec-title">Quality</p>
+      <div class="seg" id="qualitySeg">
+        <button data-q="480">480p</button>
+        <button data-q="720" class="active">720p</button>
+        <button data-q="1080">1080p</button>
+      </div>
+    </div>
+
+    <div>
+      <p class="sec-title">Watermark <span class="wm-lock">🔒 Always on</span></p>
+      <div class="wm-box">
+        <span class="ic">⚡</span>
+        <span><b>CaptureX</b> · github.com/aslam-prog<br />linkedin.com/in/mohammed-aslam-aa903312</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="fileName">File name</label>
+      <input type="text" id="fileName" placeholder="capturex-recording" />
+    </div>
+
+    <div class="profile">
+      <div class="avatar">MA</div>
+      <div>
+        <b>Mohammed Aslam</b>
+        <div class="plinks">
+          <a href="https://github.com/aslam-prog" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://www.linkedin.com/in/mohammed-aslam-aa903312/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="mailto:uniqueehubs@gmail.com">Email</a>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ============ WORKSPACE ============ -->
+  <div class="work">
+
+    <div class="notice" id="notice">
+      <span>⚠️</span>
+      <span id="noticeText"></span>
+      <button class="x" id="noticeClose" title="Dismiss">✕</button>
+    </div>
+
+    <div class="window">
+      <div class="titlebar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <h2 id="stageTitle">Preview</h2>
+        <span class="sp"></span>
+        <button class="tbtn" id="playLastBtn" disabled>▶ Play Last</button>
+        <button class="tbtn go" id="downloadBtn" disabled>↓ Download <span class="kb">D</span></button>
+      </div>
+
+      <div class="stage" id="stage">
+        <video id="preview" autoplay muted playsinline></video>
+        <video id="playback" controls playsinline></video>
+        <div class="empty" id="empty">
+          <div class="ring">🎬</div>
+          <h3>Your recording will appear here</h3>
+          <p>
+            Works with entire screen, windows, and individual tabs.
+            Press <kbd>Space</kbd> to start — everything stays on your device.
+          </p>
+        </div>
+      </div>
+
+      <div class="statbar">
+        <div><span>Status</span><b id="statusText" class="idle">Idle</b></div>
+        <div><span>Duration</span><b id="durText">00:00</b></div>
+        <div><span>Size</span><b id="sizeText">—</b></div>
+        <div><span>Audio</span><b id="audioText">None</b></div>
+      </div>
+    </div>
+
+    <div class="window">
+      <div class="lib-head">
+        <span>📁</span>
+        <h2>Recordings</h2>
+        <span class="count" id="recCount">0</span>
+        <span class="sp"></span>
+        <button class="tbtn" id="selectAllBtn" disabled>☑ Select all</button>
+        <button class="tbtn del" id="deleteSelBtn" disabled>🗑 Delete selected</button>
+      </div>
+      <div class="lib-body" id="libBody">
+        <div class="lib-empty">No recordings yet. Your captures will be listed here.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <span class="fname">CaptureX</span>
+  <span class="dot">·</span>
+  <span class="dev">Developed by <b>Mohammed Aslam</b></span>
+  <span class="dot">·</span>
+  <a href="https://github.com/aslam-prog" target="_blank" rel="noopener noreferrer">👤 aslam-prog</a>
+  <span class="dot">·</span>
+  <a href="https://aslam-prog.github.io/hipaa-shield" target="_blank" rel="noopener noreferrer">➕ HIPAA Shield</a>
+  <span class="dot">·</span>
+  <a href="https://aslam-prog.github.io/IntuneDNA" target="_blank" rel="noopener noreferrer">🧬 IntuneDNA</a>
+  <span class="dot">·</span>
+  <a href="https://github.com/aslam-prog/gitdna" target="_blank" rel="noopener noreferrer">🚀 GitDNA</a>
+  <span class="dot">·</span>
+  <a href="https://github.com/aslam-prog/ResumeScore-AI" target="_blank" rel="noopener noreferrer">⚡ ResumeScore AI</a>
+  <span class="sp"></span>
+  <span class="copy">© 2026 Mohammed Aslam · MIT License</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  const WM_LINE1 = "CaptureX · github.com/aslam-prog";
+  const WM_LINE2 = "linkedin.com/in/mohammed-aslam-aa903312";
+
+  const srcHost=$("srcHost");
+  const preview=$("preview"), playback=$("playback"), empty=$("empty");
+  const mainBtn=$("mainBtn"), pauseBtn=$("pauseBtn"), stopBtn=$("stopBtn");
+  const downloadBtn=$("downloadBtn"), playLastBtn=$("playLastBtn");
+  const statusText=$("statusText"), durText=$("durText"), sizeText=$("sizeText"), audioText=$("audioText");
+  const liveBadge=$("liveBadge"), liveLabel=$("liveLabel"), liveTime=$("liveTime");
+  const micToggle=$("micToggle"), sysToggle=$("sysToggle");
+  const rowMic=$("rowMic"), rowSys=$("rowSys");
+  const libBody=$("libBody"), recCount=$("recCount");
+  const selectAllBtn=$("selectAllBtn"), deleteSelBtn=$("deleteSelBtn");
+  const notice=$("notice"), noticeText=$("noticeText"), noticeClose=$("noticeClose");
+
+  let recorder=null, chunks=[], recStream=null;
+  let displayStream=null, micStream=null, audioCtx=null;
+  let canvas=null, ctx=null, srcVideo=null;
+  let drawWorker=null, canvasTrack=null, useRequestFrame=false;
+  let ticker=null, elapsed=0, sizeBytes=0;
+  let recordings=[], seq=0, lastId=null;
+
+  const PRESETS={
+    "480":{w:854,h:480,fps:24,bitrate:1200000},
+    "720":{w:1280,h:720,fps:30,bitrate:2500000},
+    "1080":{w:1920,h:1080,fps:30,bitrate:5000000}
+  };
+  let quality="720";
+
+  const pad=(n)=>String(n).padStart(2,"0");
+  const fmt=(s)=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return (h?pad(h)+":":"")+pad(m)+":"+pad(s%60);};
+  const mb=(b)=>(b/1048576).toFixed(1)+" MB";
+  function setStatus(t,c){statusText.textContent=t;statusText.className=c||"";}
+  function showNotice(html){noticeText.innerHTML=html;notice.classList.add("show");}
+  function hideNotice(){notice.classList.remove("show");}
+  noticeClose.addEventListener("click",hideNotice);
+
+  /* ---------- toggles ---------- */
+  function bindToggle(row,input){
+    row.addEventListener("click",(e)=>{
+      e.preventDefault();
+      if(recorder && recorder.state!=="inactive") return;
+      input.checked=!input.checked;
+      row.classList.toggle("on",input.checked);
+      refreshAudio();
+    });
+  }
+  bindToggle(rowMic,micToggle);
+  bindToggle(rowSys,sysToggle);
+
+  function refreshAudio(){
+    const p=[];
+    if(sysToggle.checked) p.push("System");
+    if(micToggle.checked) p.push("Mic");
+    audioText.className="";
+    audioText.textContent=p.length?p.join(" + "):"None";
+  }
+  refreshAudio();
+
+  $("qualitySeg").addEventListener("click",(e)=>{
+    const b=e.target.closest("button"); if(!b) return;
+    if(recorder && recorder.state!=="inactive") return;
+    quality=b.dataset.q;
+    [...e.currentTarget.children].forEach(x=>x.classList.toggle("active",x===b));
+  });
+
+  /* ---------- timer ---------- */
+  function startTimer(){
+    ticker=setInterval(()=>{
+      elapsed++;
+      liveTime.textContent=fmt(elapsed);
+      durText.textContent=fmt(elapsed);
+      if(sizeBytes) sizeText.textContent=mb(sizeBytes);
+    },1000);
+  }
+  function stopTimer(){clearInterval(ticker);ticker=null;}
+
+  function pickMime(){
+    const list=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"];
+    for(const t of list) if(window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+    return "";
+  }
+
+  async function buildAudioTrack(sysTracks,micTracks){
+    if(!sysTracks.length && !micTracks.length) return null;
+    if(sysTracks.length && !micTracks.length) return sysTracks[0];
+    if(!sysTracks.length && micTracks.length) return micTracks[0];
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    // an AudioContext can start suspended — a suspended graph outputs silence
+    if(audioCtx.state==="suspended"){ try{ await audioCtx.resume(); }catch(e){} }
+    const dest=audioCtx.createMediaStreamDestination();
+    [sysTracks[0],micTracks[0]].forEach(tr=>{
+      const s=audioCtx.createMediaStreamSource(new MediaStream([tr]));
+      const g=audioCtx.createGain(); g.gain.value=1;
+      s.connect(g).connect(dest);
+    });
+    return dest.stream.getAudioTracks()[0];
+  }
+
+  /* ---------- watermark compositing (always applied) ---------- */
+  function drawWatermark(w,h){
+    const scale=h/720;
+    const f1=Math.max(11,Math.round(15*scale));
+    const f2=Math.max(10,Math.round(13*scale));
+    const padX=Math.round(16*scale), padY=Math.round(13*scale);
+    const m=Math.round(20*scale);
+
+    ctx.font="600 "+f1+"px Segoe UI, system-ui, Arial, sans-serif";
+    const w1=ctx.measureText("⚡ "+WM_LINE1).width;
+    ctx.font="500 "+f2+"px Segoe UI, system-ui, Arial, sans-serif";
+    const w2=ctx.measureText(WM_LINE2).width;
+
+    const boxW=Math.max(w1,w2)+padX*2;
+    const boxH=f1+f2+padY*2+Math.round(7*scale);
+    const x=w-boxW-m, y=h-boxH-m;
+    const r=Math.round(11*scale);
+
+    ctx.save();
+    ctx.globalAlpha=0.78;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+boxW,y,x+boxW,y+boxH,r);
+    ctx.arcTo(x+boxW,y+boxH,x,y+boxH,r);
+    ctx.arcTo(x,y+boxH,x,y,r);
+    ctx.arcTo(x,y,x+boxW,y,r);
+    ctx.closePath();
+    ctx.fillStyle="rgba(4,10,20,0.72)";
+    ctx.fill();
+    ctx.lineWidth=Math.max(1,scale);
+    ctx.strokeStyle="rgba(34,211,238,0.55)";
+    ctx.stroke();
+
+    ctx.globalAlpha=1;
+    ctx.textBaseline="top";
+    ctx.font="600 "+f1+"px Segoe UI, system-ui, Arial, sans-serif";
+    ctx.fillStyle="#22d3ee";
+    ctx.fillText("⚡ "+WM_LINE1,x+padX,y+padY);
+    ctx.font="500 "+f2+"px Segoe UI, system-ui, Arial, sans-serif";
+    ctx.fillStyle="rgba(233,240,255,0.9)";
+    ctx.fillText(WM_LINE2,x+padX,y+padY+f1+Math.round(6*scale));
+    ctx.restore();
+  }
+
+  function drawFrame(){
+    if(!srcVideo || !ctx || !canvas) return;
+    const cw=canvas.width, ch=canvas.height;
+    const vw=srcVideo.videoWidth, vh=srcVideo.videoHeight;
+    ctx.fillStyle="#000";
+    ctx.fillRect(0,0,cw,ch);
+    if(vw && vh){
+      const s=Math.min(cw/vw,ch/vh);
+      const dw=vw*s, dh=vh*s;
+      ctx.drawImage(srcVideo,(cw-dw)/2,(ch-dh)/2,dw,dh);
+    }
+    drawWatermark(cw,ch);
+    // push this frame explicitly so capture never depends on page rendering
+    if(useRequestFrame && canvasTrack && canvasTrack.requestFrame){
+      try{ canvasTrack.requestFrame(); }catch(e){}
+    }
+  }
+
+  /* Worker-driven clock: setInterval/rAF on the page are throttled hard when the
+     tab is in the background — which is exactly when you're recording something
+     else. Worker timers are not throttled, so frames keep flowing. */
+  function startDrawLoop(fps){
+    const src="let id=null;onmessage=function(e){"+
+      "if(e.data&&e.data.cmd==='start'){clearInterval(id);id=setInterval(function(){postMessage(0)},e.data.ms);}"+
+      "else if(e.data&&e.data.cmd==='stop'){clearInterval(id);id=null;}};";
+    try{
+      drawWorker=new Worker(URL.createObjectURL(new Blob([src],{type:"text/javascript"})));
+      drawWorker.onmessage=drawFrame;
+      drawWorker.postMessage({cmd:"start",ms:Math.round(1000/fps)});
+    }catch(err){
+      console.warn("Worker unavailable, falling back to setInterval:",err);
+      drawWorker={ _iv:setInterval(drawFrame,Math.round(1000/fps)),
+                   terminate(){clearInterval(this._iv);} };
+    }
+  }
+  function stopDrawLoop(){
+    if(drawWorker){ try{ drawWorker.terminate(); }catch(e){} drawWorker=null; }
+  }
+
+  /* ---------- start ---------- */
+  async function start(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
+      alert("Screen recording isn't supported here. Use Chrome, Edge or Firefox on desktop.");
+      return;
+    }
+    hideNotice();
+    const p=PRESETS[quality];
+
+    try{
+      displayStream=await navigator.mediaDevices.getDisplayMedia({
+        video:{width:{ideal:p.w},height:{ideal:p.h},frameRate:{ideal:p.fps}},
+        audio:sysToggle.checked?{echoCancellation:false,noiseSuppression:false,autoGainControl:false}:false
+      });
+    }catch(err){
+      if(err && err.name==="NotAllowedError"){setStatus("Cancelled","idle");return;}
+      alert("Could not start capture: "+(err&&err.message?err.message:err));
+      return;
+    }
+
+    const sysTracks=displayStream.getAudioTracks();
+
+    // tell the user immediately if system audio was asked for but not shared
+    if(sysToggle.checked && sysTracks.length===0){
+      showNotice("<b>System audio wasn't shared.</b> Windows only offers it when you share "+
+                 "a <b>browser tab</b> or the <b>entire screen</b> and tick "+
+                 "<b>“Share tab audio” / “Share system audio”</b> in the dialog. "+
+                 "Sharing a single app window can't include sound. Recording will continue without it.");
+    }
+
+    if(micToggle.checked){
+      try{
+        micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+      }catch(err){
+        console.warn("Mic unavailable:",err);
+        showNotice("<b>Microphone could not be opened.</b> Check the browser's mic permission for this site. Recording will continue without your voice.");
+      }
+    }
+
+    // composite through a canvas so the watermark is burned into the file
+    srcVideo=document.createElement("video");
+    srcVideo.muted=true; srcVideo.playsInline=true; srcVideo.autoplay=true;
+    srcVideo.srcObject=new MediaStream([displayStream.getVideoTracks()[0]]);
+    srcHost.appendChild(srcVideo);           // must be in the DOM to keep decoding
+    try{ await srcVideo.play(); }catch(e){}
+    // wait for real dimensions before sizing the canvas
+    if(!srcVideo.videoWidth){
+      await new Promise(res=>{
+        const done=()=>res();
+        srcVideo.addEventListener("loadedmetadata",done,{once:true});
+        setTimeout(done,1500);
+      });
+    }
+
+    const st=displayStream.getVideoTracks()[0].getSettings();
+    canvas=document.createElement("canvas");
+    canvas.width=st.width||srcVideo.videoWidth||p.w;
+    canvas.height=st.height||srcVideo.videoHeight||p.h;
+    ctx=canvas.getContext("2d",{alpha:false});
+
+    // captureStream(0) + requestFrame() = frames are pushed by us, never dropped
+    // because the page stopped painting. Fall back to timed capture if unsupported.
+    let canvasStream;
+    try{
+      canvasStream=canvas.captureStream(0);
+      canvasTrack=canvasStream.getVideoTracks()[0];
+      useRequestFrame=!!(canvasTrack && typeof canvasTrack.requestFrame==="function");
+      if(!useRequestFrame){
+        canvasStream=canvas.captureStream(p.fps);
+        canvasTrack=canvasStream.getVideoTracks()[0];
+      }
+    }catch(err){
+      canvasStream=canvas.captureStream(p.fps);
+      canvasTrack=canvasStream.getVideoTracks()[0];
+      useRequestFrame=false;
+    }
+
+    drawFrame();                 // paint frame 1 immediately
+    startDrawLoop(p.fps);
+
+    const mixed=await buildAudioTrack(sysTracks, micStream?micStream.getAudioTracks():[]);
+    const tracks=[canvasTrack];
+    if(mixed) tracks.push(mixed);
+    recStream=new MediaStream(tracks);
+
+    const mime=pickMime();
+    try{
+      recorder=new MediaRecorder(recStream,{mimeType:mime||undefined,videoBitsPerSecond:p.bitrate});
+    }catch(err){
+      alert("Recorder could not start: "+err.message);
+      cleanup(); return;
+    }
+
+    chunks=[]; sizeBytes=0;
+    recorder.ondataavailable=(e)=>{if(e.data&&e.data.size){chunks.push(e.data);sizeBytes+=e.data.size;}};
+    recorder.onstop=finalise;
+    displayStream.getVideoTracks()[0].addEventListener("ended",()=>{
+      if(recorder&&recorder.state!=="inactive") stop();
+    });
+    recorder.start(1000);
+
+    preview.srcObject=canvasStream;
+    preview.classList.add("active");
+    playback.classList.remove("active");
+    empty.style.display="none";
+    $("stageTitle").textContent="Recording — live preview";
+    liveBadge.classList.add("show","rec");
+    liveLabel.textContent="REC";
+
+    // reflect what is actually being recorded, not just what was ticked
+    const got=[];
+    if(sysTracks.length) got.push("System");
+    if(micStream && micStream.getAudioTracks().length) got.push("Mic");
+    audioText.className=got.length?"":"warn";
+    audioText.textContent=got.length?got.join(" + "):"None";
+
+    elapsed=0; liveTime.textContent="00:00"; durText.textContent="00:00"; sizeText.textContent="0.0 MB";
+    startTimer();
+
+    mainBtn.classList.add("recording");
+    mainBtn.innerHTML="■ Stop Recording";
+    pauseBtn.disabled=false; stopBtn.disabled=false;
+    pauseBtn.innerHTML='❚❚ Pause <span class="kb">P</span>';
+    setStatus("Recording","live");
+  }
+
+  function togglePause(){
+    if(!recorder) return;
+    if(recorder.state==="recording"){
+      recorder.pause(); stopTimer();
+      liveBadge.classList.remove("rec"); liveLabel.textContent="PAUSED";
+      pauseBtn.innerHTML='▶ Resume <span class="kb">P</span>';
+      setStatus("Paused","paused");
+    }else if(recorder.state==="paused"){
+      recorder.resume(); startTimer();
+      liveBadge.classList.add("rec"); liveLabel.textContent="REC";
+      pauseBtn.innerHTML='❚❚ Pause <span class="kb">P</span>';
+      setStatus("Recording","live");
+    }
+  }
+
+  function stop(){
+    if(recorder&&recorder.state!=="inactive") recorder.stop();
+    stopTimer();
+  }
+
+  function cleanup(){
+    stopDrawLoop();
+    [displayStream,micStream,recStream].forEach(s=>{ if(s) s.getTracks().forEach(t=>t.stop()); });
+    if(audioCtx){audioCtx.close().catch(()=>{});audioCtx=null;}
+    if(srcVideo){
+      srcVideo.pause(); srcVideo.srcObject=null;
+      if(srcVideo.parentNode) srcVideo.parentNode.removeChild(srcVideo);
+      srcVideo=null;
+    }
+    displayStream=micStream=recStream=null;
+    canvas=null; ctx=null; canvasTrack=null;
+  }
+
+  /* ---------- finalise ---------- */
+  function makeThumb(blob,cb){
+    let done=false;
+    const finish=(d)=>{ if(!done){done=true;cb(d);} };
+    const v=document.createElement("video");
+    v.preload="metadata"; v.muted=true; v.playsInline=true;
+    v.src=URL.createObjectURL(blob);
+    v.addEventListener("loadeddata",()=>{
+      try{ v.currentTime=Math.min(1,(v.duration||1)/2); }catch(e){ finish(null); }
+    });
+    v.addEventListener("seeked",()=>{
+      try{
+        const c=document.createElement("canvas");
+        c.width=124; c.height=72;
+        c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+        finish(c.toDataURL("image/jpeg",0.7));
+      }catch(e){ finish(null); }
+      URL.revokeObjectURL(v.src);
+    });
+    setTimeout(()=>finish(null),3000);
+  }
+
+  function finalise(){
+    const type=(recorder&&recorder.mimeType)||"video/webm";
+    cleanup();
+    const blob=new Blob(chunks,{type});
+    const id="r"+(++seq);
+    const base=($("fileName").value||"capturex-recording").trim().replace(/[\\/:*?"<>|]/g,"-");
+    const stamp=new Date();
+    const item={
+      id, blob,
+      url:URL.createObjectURL(blob),
+      name:base+"-"+String(seq).padStart(2,"0"),
+      ext:type.includes("mp4")?"mp4":"webm",
+      size:blob.size,
+      duration:elapsed,
+      at:stamp,
+      thumb:null,
+      selected:false
+    };
+    recordings.unshift(item);
+    lastId=id;
+    makeThumb(blob,(d)=>{ item.thumb=d; renderLibrary(); });
+    renderLibrary();
+
+    preview.srcObject=null; preview.classList.remove("active");
+    playback.src=item.url; playback.classList.add("active");
+    $("stageTitle").textContent="Preview — "+item.name;
+    liveBadge.classList.remove("show","rec");
+
+    sizeText.textContent=mb(blob.size);
+    mainBtn.classList.remove("recording");
+    mainBtn.innerHTML="● Start Recording";
+    pauseBtn.disabled=true; stopBtn.disabled=true;
+    downloadBtn.disabled=false; playLastBtn.disabled=false;
+    setStatus("Ready","done");
+  }
+
+  /* ---------- library ---------- */
+  function renderLibrary(){
+    recCount.textContent=recordings.length;
+    if(!recordings.length){
+      libBody.innerHTML='<div class="lib-empty">No recordings yet. Your captures will be listed here.</div>';
+      selectAllBtn.disabled=true; deleteSelBtn.disabled=true;
+      return;
+    }
+    selectAllBtn.disabled=false;
+    libBody.innerHTML="";
+    recordings.forEach(r=>{
+      const row=document.createElement("div");
+      row.className="rec"+(r.selected?" sel":"");
+      const time=r.at.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+      row.innerHTML=
+        '<input type="checkbox" data-a="sel" '+(r.selected?"checked":"")+' />'+
+        '<div class="thumb">'+(r.thumb?'<img src="'+r.thumb+'" alt="" />':"🎞️")+'</div>'+
+        '<div class="meta"><b>'+r.name+"."+r.ext+'</b><em>'+fmt(r.duration)+' · '+mb(r.size)+' · '+time+'</em></div>'+
+        '<div class="acts">'+
+          '<button class="ibtn" data-a="play" title="Play">▶</button>'+
+          '<button class="ibtn" data-a="dl" title="Download">↓</button>'+
+          '<button class="ibtn d" data-a="del" title="Delete">🗑</button>'+
+        '</div>';
+      row.addEventListener("click",(e)=>{
+        const t=e.target.closest("[data-a]"); if(!t) return;
+        const a=t.dataset.a;
+        if(a==="sel"){ r.selected=t.checked; row.classList.toggle("sel",r.selected); syncDelete(); }
+        else if(a==="play"){ playItem(r); }
+        else if(a==="dl"){ downloadItem(r); }
+        else if(a==="del"){ deleteItems([r.id]); }
+      });
+      libBody.appendChild(row);
+    });
+    syncDelete();
+  }
+
+  function syncDelete(){
+    const n=recordings.filter(r=>r.selected).length;
+    deleteSelBtn.disabled=n===0;
+    deleteSelBtn.innerHTML=n?("🗑 Delete selected ("+n+")"):"🗑 Delete selected";
+    const all=recordings.length>0 && n===recordings.length;
+    selectAllBtn.innerHTML=all?"☐ Clear selection":"☑ Select all";
+  }
+
+  function playItem(r){
+    preview.srcObject=null; preview.classList.remove("active");
+    playback.src=r.url; playback.classList.add("active");
+    empty.style.display="none";
+    $("stageTitle").textContent="Preview — "+r.name;
+    playback.play().catch(()=>{});
+    lastId=r.id;
+    downloadBtn.disabled=false; playLastBtn.disabled=false;
+    sizeText.textContent=mb(r.size);
+    durText.textContent=fmt(r.duration);
+  }
+
+  function downloadItem(r){
+    const a=document.createElement("a");
+    a.href=r.url;
+    a.download=r.name+"-"+r.at.toISOString().slice(0,19).replace(/[:T]/g,"-")+"."+r.ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    setStatus("Downloaded","done");
+  }
+
+  function deleteItems(ids){
+    const gone=recordings.filter(r=>ids.includes(r.id));
+    if(!gone.length) return;
+    const msg=gone.length===1
+      ? 'Delete "'+gone[0].name+"."+gone[0].ext+'"? This cannot be undone.'
+      : "Delete "+gone.length+" recordings? This cannot be undone.";
+    if(!confirm(msg)) return;
+
+    gone.forEach(r=>URL.revokeObjectURL(r.url));
+    recordings=recordings.filter(r=>!ids.includes(r.id));
+
+    if(ids.includes(lastId)){
+      playback.removeAttribute("src"); playback.load();
+      playback.classList.remove("active");
+      empty.style.display="";
+      $("stageTitle").textContent="Preview";
+      downloadBtn.disabled=true; playLastBtn.disabled=true;
+      lastId=recordings.length?recordings[0].id:null;
+      if(lastId){ downloadBtn.disabled=false; playLastBtn.disabled=false; }
+      sizeText.textContent="—"; durText.textContent="00:00";
+      setStatus("Idle","idle");
+    }
+    renderLibrary();
+  }
+
+  selectAllBtn.addEventListener("click",()=>{
+    const all=recordings.every(r=>r.selected);
+    recordings.forEach(r=>r.selected=!all);
+    renderLibrary();
+  });
+  deleteSelBtn.addEventListener("click",()=>{
+    deleteItems(recordings.filter(r=>r.selected).map(r=>r.id));
+  });
+
+  const current=()=>recordings.find(r=>r.id===lastId)||recordings[0]||null;
+  downloadBtn.addEventListener("click",()=>{const r=current(); if(r) downloadItem(r);});
+  playLastBtn.addEventListener("click",()=>{const r=current(); if(r) playItem(r);});
+
+  mainBtn.addEventListener("click",()=>{
+    if(recorder&&recorder.state!=="inactive") stop(); else start();
+  });
+  pauseBtn.addEventListener("click",togglePause);
+  stopBtn.addEventListener("click",stop);
+
+  document.addEventListener("keydown",(e)=>{
+    const tag=(e.target.tagName||"").toLowerCase();
+    if(tag==="input"||tag==="select"||tag==="textarea") return;
+    if(e.ctrlKey||e.altKey||e.metaKey) return;
+    const live=recorder&&recorder.state!=="inactive";
+    if(e.code==="Space"){ e.preventDefault(); live?stop():start(); }
+    else if(e.key==="Escape"&&live){ e.preventDefault(); stop(); }
+    else if(e.key.toLowerCase()==="p"&&live){ e.preventDefault(); togglePause(); }
+    else if(e.key.toLowerCase()==="d"&&!downloadBtn.disabled){ e.preventDefault(); const r=current(); if(r) downloadItem(r); }
+  });
+
+  window.addEventListener("beforeunload",(e)=>{
+    if((recorder&&recorder.state!=="inactive")||recordings.length){ e.preventDefault(); e.returnValue=""; }
+  });
+})();
+</script>
+</body>
+</html>
