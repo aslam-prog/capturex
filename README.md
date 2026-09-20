@@ -1,14 +1,14 @@
 # 🎬 CaptureX
 
-**Enterprise-grade browser-based screen recorder for recording screens, windows, browser tabs, and audio directly in your browser.**
+Enterprise-grade browser-based screen recorder for recording screens, windows, browser tabs, and audio directly in your browser.
 
-CaptureX is a modern screen recording solution that supports screen, window, and browser tab capture with microphone recording, system audio capture, recording management, playback, and downloads. All processing happens locally in your browser, giving you complete control over your recordings without relying on external services or software installation
+CaptureX is a modern screen recording solution that supports screen, window, and browser tab capture with microphone recording, system audio capture, recording management, playback, and downloads. All processing happens locally in your browser, giving you complete control over your recordings without relying on external services or software installation.
 
 ---
 
 ## 🚀 Live Demo
 
-➡️ [Launch CaptureX](https://aslam-prog.github.io/capturex/)
+➡️ Launch CaptureX
 
 No login. No account. No data sent anywhere. Open CaptureX and start recording instantly in your browser.
 
@@ -18,15 +18,11 @@ No login. No account. No data sent anywhere. Open CaptureX and start recording i
 
 ### Live Recording
 
-<p align="center">
-  recording.png
-</p>
+recording.png
 
 ### Playback and Recording Library
 
-<p align="center">
-  <img src=".png
-</p>
+screenshot.png
 
 ---
 
@@ -37,187 +33,149 @@ No login. No account. No data sent anywhere. Open CaptureX and start recording i
 - Record the entire screen
 - Record a specific application window
 - Record an individual browser tab
-- Preview the active recording in real time
+- Preview recordings in real time
 - Pause and resume recordings
-- Stop recording from CaptureX or the browser sharing controls
-- Choose from 480p, 720p, and 1080p quality presets
+- Stop recordings instantly
+- Multiple quality presets:
+  - 480p
+  - 720p
+  - 1080p
 
 ### 🎙️ Audio Capture
 
-- Record microphone audio
-- Capture supported system or browser-tab audio
-- Record microphone and system audio together
-- Display the audio sources actually included in the recording
-- Show a clear warning when system audio was requested but not shared by the browser
-
-> **System audio note:** When sharing a browser tab, enable **Share tab audio**. When sharing the entire screen on a supported Windows browser, enable **Share system audio**. A single application window may not provide an audio track.
+- Microphone recording
+- System audio capture
+- Combined microphone and system audio recording
+- Audio status detection
+- Recording validation and warnings
 
 ### 📁 Recording Management
 
-- Keep multiple recordings during the current browser session
-- View automatically generated recording thumbnails
-- Preview any recording directly in CaptureX
-- See recording duration, file size, and creation time
-- Download recordings individually
-- Delete individual recordings
-- Select multiple recordings for deletion
-- Select or clear all recordings
-- Receive confirmation before deletion
+- Built-in recording library
+- Recording thumbnails
+- Instant playback
+- Download recordings
+- Delete recordings
+- Multi-select deletion
+- Select all support
+- Recording duration tracking
+- Recording size tracking
 
-### 🎨 Modern User Experience
+### 🎨 Modern Interface
 
-- Professional dark interface
-- Responsive sidebar and workspace layout
-- Live recording status and timer
-- Current recording size indicator
-- Audio-source status indicator
-- Built-in playback controls
-- Clear recording, paused, ready, enabled, and disabled states
-- No installation or account setup required
+- Professional dark theme
+- Responsive layout
+- Live recording timer
+- Recording statistics
+- Recording status indicators
+- Keyboard shortcuts
+- Built-in watermark attribution
 
 ### ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
-|---|---|
-| `Space` | Start or stop recording |
-| `P` | Pause or resume recording |
-| `D` | Download the current recording |
-| `Esc` | Stop recording |
+|----------|--------|
+| Space | Start / Stop Recording |
+| P | Pause / Resume Recording |
+| D | Download Latest Recording |
+| Esc | Stop Recording |
 
 ---
 
-## 🔒 Privacy and Local Processing
+## 🔒 Privacy & Local Processing
 
-CaptureX is designed to run entirely inside your browser.
+CaptureX runs entirely inside your browser.
 
-- No backend servers
-- No cloud uploads
-- No user accounts
-- No software installation
-- No data collection
-- No third-party video processing
-- Local recording, playback, and file generation
-- Local watermark rendering
+✅ No backend servers
 
-Your recordings remain on your device unless you choose to download and share them.
+✅ No cloud uploads
+
+✅ No user accounts
+
+✅ No software installation
+
+✅ No data collection
+
+✅ No third-party processing
+
+✅ 100% local recording and playback
+
+Your recordings never leave your device unless you choose to download and share them.
 
 ---
 
 ## 📋 How to Use
 
-### 1. Choose Recording Options
+### Start Recording
 
-- Keep **Screen** enabled
-- Enable **Microphone** if you want to include your voice
-- Enable **System Audio** if you want to capture supported computer or browser-tab sound
-- Select 480p, 720p, or 1080p
-- Optionally enter a custom file name
+1. Select recording options
+2. Enable Microphone and/or System Audio if required
+3. Select a recording quality
+4. Click **Start Recording**
+5. Choose:
+   - Entire Screen
+   - Application Window
+   - Browser Tab
+6. Start recording
 
-### 2. Start Recording
+### Manage Recordings
 
-1. Select **Start Recording**
-2. Choose an entire screen, application window, or browser tab
-3. Enable the browser audio-sharing option when system or tab audio is required
-4. Begin your activity
+After stopping a recording:
 
-### 3. Control the Recording
-
-- Select **Pause** to temporarily pause capture
-- Select **Resume** to continue
-- Select **Stop** when the recording is complete
-
-### 4. Preview and Manage Recordings
-
-After stopping:
-
-- Preview the captured video
-- Download the current recording
-- Play any recording from the library
-- Select one or more recordings
+- Preview instantly
+- Download recordings
+- Manage recordings from the library
 - Delete unwanted recordings
 
 ---
 
-## 🔊 System Audio Guidance
+## 🔊 System Audio Notes
 
-System audio availability depends on the selected sharing source, browser, and operating system.
+System audio support depends on your browser and operating system.
 
-For the most reliable results:
+For best results:
 
-- To capture browser audio, share a browser tab and enable **Share tab audio**
-- To capture supported computer audio on Windows, share the entire screen and enable **Share system audio**
-- Do not assume that sharing a single application window will include that application's sound
-- Check the **Audio** status in CaptureX after recording starts to confirm what is actually being captured
+- Browser tabs → enable **Share tab audio**
+- Entire screen → enable **Share system audio**
+- Some application windows may not expose audio
 
-If the browser does not provide an audio track, CaptureX continues recording the screen and displays a warning.
-
----
-
-## 💾 Recording Storage
-
-Recordings are held temporarily in browser memory during the current session.
-
-- Download important recordings before refreshing or closing the page
-- Refreshing the page clears the in-session recording library
-- Deleting a recording removes it from the current session
-- CaptureX does not upload or retain a copy of your videos
+If the browser does not provide an audio stream, CaptureX will continue recording the screen and notify you.
 
 ---
 
 ## 🌟 Use Cases
 
-CaptureX is useful for:
+CaptureX is ideal for:
 
 - Product demonstrations
-- Software walkthroughs
+- Software tutorials
 - Technical documentation
-- Troubleshooting evidence
 - Issue reproduction
-- Knowledge-base content
-- Training recordings
+- Support recordings
+- Knowledge sharing
+- Training videos
 - Internal presentations
-- Support handovers
-- Browser and application tutorials
-
----
-
-## 🖥️ Browser Support
-
-CaptureX is intended for current desktop versions of:
-
-- Microsoft Edge
-- Google Chrome
-- Mozilla Firefox
-
-Recording and audio-sharing capabilities can vary by browser, operating system, and selected sharing source.
+- Screen walkthroughs
 
 ---
 
 ## 🧬 Other Projects
 
-### 🛡️ HIPAA Shield
+### 🛡 HIPAA Shield
 
-Browser-based healthcare document compliance analyzer covering HIPAA Privacy, Security, Breach Notification, and Business Associate Agreement requirements.
-
-[Open HIPAA Shield](https://aslam-prog.github.io/hipaa-shield)
+Browser-based healthcare compliance document analyzer.
 
 ### 🧬 IntuneDNA
 
 Enterprise-grade client-side static analyzer for PowerShell, Intune, and Microsoft Graph scripts.
 
-[Open IntuneDNA](https://aslam-prog.github.io/IntuneDNA)
-
 ### 🚀 GitDNA
 
-GitHub profile analytics and intelligence project.
-
-[View GitDNA on GitHub](https://github.com/aslam-prog/gitdna)
+GitHub profile analytics and intelligence platform.
 
 ### ⚡ ResumeScore AI
 
-Browser-based resume analysis and scoring project.
-
-[View ResumeScore AI on GitHub](https://github.com/aslam-prog/ResumeScore-AI)
+Browser-based resume analysis and scoring platform.
 
 ---
 
@@ -225,36 +183,29 @@ Browser-based resume analysis and scoring project.
 
 **Mohammed Aslam**
 
-- [GitHub profile](https://github.com/aslam-prog)
-- [LinkedIn profile](https://www.linkedin.com/in/mohammed-aslam-aa903312/)
-- Email: `uniqueehubs@gmail.com`
+- GitHub: @aslam-prog
+- LinkedIn: Mohammed Aslam
+- Email: uniqueehubs@gmail.com
 
 ---
 
 ## 📄 License
 
-CaptureX is released under the MIT License.
+MIT License
 
 Copyright © 2026 Mohammed Aslam
 
-See the `LICENSE` file for the complete license text.
-
 ---
 
-## ⭐ Support the Project
+## ⭐ Support
 
-If CaptureX is useful to you:
+If you find CaptureX useful:
 
 - Star the repository
-- Share the live application
-- Report issues with clear reproduction steps
-- Suggest practical improvements
-- Explore the other projects listed above
+- Share the project
+- Explore my other projects
+- Provide feedback and suggestions
 
 ---
 
-<p align="center">
-  <strong>CaptureX</strong><br>
-  Developed by Mohammed Aslam<br>
-  Secure, private, browser-based screen capture
-</p>
+**CaptureX • Developed by Mohammed Aslam**
