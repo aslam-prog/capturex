@@ -16,16 +16,16 @@ No login. No account. No data sent anywhere. Open CaptureX and start recording i
 
 ## 📸 Screenshots
 
-### Playback and Recording Library
-
-<p align="center">
-  <img src="screenshot.png" alt="CaptureX recording playback and recording library" width="100%">
-</p>
-
 ### Live Recording
 
 <p align="center">
-  <img src="recording.png" alt="CaptureX live screen recording in progress" width="100%">
+  recording.png
+</p>
+
+### Playback and Recording Library
+
+<p align="center">
+  <img src=".png
 </p>
 
 ---
